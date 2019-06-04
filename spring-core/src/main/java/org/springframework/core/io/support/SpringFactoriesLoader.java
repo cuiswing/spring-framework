@@ -122,6 +122,7 @@ public final class SpringFactoriesLoader {
 		return loadSpringFactories(classLoader).getOrDefault(factoryClassName, Collections.emptyList());
 	}
 
+	// classLoader会加载当前工程所有jar包(并非只有spring-boot一个工程)类路径下的/META-INF/spring.factories文件,并从中找出要被加载的类
 	private static Map<String, List<String>> loadSpringFactories(@Nullable ClassLoader classLoader) {
 		MultiValueMap<String, String> result = cache.get(classLoader);
 		if (result != null) {
@@ -133,6 +134,7 @@ public final class SpringFactoriesLoader {
 					classLoader.getResources(FACTORIES_RESOURCE_LOCATION) :
 					ClassLoader.getSystemResources(FACTORIES_RESOURCE_LOCATION));
 			result = new LinkedMultiValueMap<>();
+			// 例如会加载spring-boot-autoconfigure-2.1.5.RELEASE.jar!/META-INF/spring.factories 中的工厂类
 			while (urls.hasMoreElements()) {
 				URL url = urls.nextElement();
 				UrlResource resource = new UrlResource(url);

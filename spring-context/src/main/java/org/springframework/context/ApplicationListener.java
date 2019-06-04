@@ -19,6 +19,8 @@ package org.springframework.context;
 import java.util.EventListener;
 
 /**
+ * 这个接口继承了 JDK 的 java.util.EventListener 接口，实现了观察者模式，
+ * 它一般用来定义感兴趣的事件类型，事件类型限定于 ApplicationEvent 的子类，事件同样继承了 JDK 的 java.util.EventObject 接口。
  * Interface to be implemented by application event listeners.
  * Based on the standard {@code java.util.EventListener} interface
  * for the Observer design pattern.

@@ -389,7 +389,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			throws BeanDefinitionStoreException {
 
 		try {
+			// loadBeanDefinitions处理过程中将Resource解析成Document文档,
 			Document doc = doLoadDocument(inputSource, resource);
+			// 然后具体解析Document文档的过程交由BeanDefinitionDocumentReader.registerBeanDefinitions(Document doc, XmlReaderContext readerContext)方法来完成
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -526,6 +528,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	/**
 	 * Create the {@link XmlReaderContext} to pass over to the document reader.
+	 * 在createReaderContext方法中,将this对象传递给新创建的XmlReaderContext,
+	 * 因为XmlReaderContext内部需要一个BeanDefinitionRegistry和BeanDefinition关联,
+	 * 而通过this可以获取到关联的BeanDefinitionRegistry.
 	 */
 	public XmlReaderContext createReaderContext(Resource resource) {
 		return new XmlReaderContext(resource, this.problemReporter, this.eventListener,

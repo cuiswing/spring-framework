@@ -55,6 +55,15 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 
 
 	/**
+	 * StandardServletEnvironment继承自StandardEnvironment，也就是web环境是特殊的非web环境，有点类似正方形是特殊的长方形一样。
+	 * AbstractEnvironment的构造方法调用了customizePropertySources方法，也就说StandardServletEnvironment在实例化的时候，
+	 * 他的customizePropertySources会被调用
+	 *
+	 * StandardServletEnvironment的customizePropertySources方法只是往propertySources中添加了两个名字叫
+	 * servletConfigInitParams、servletContextInitParams的StubPropertySource对象，没更多的操作；
+	 * 而StandardEnvironment的customizePropertySources方法则往propertySources中添加了两个包含java系统属性和操作系统环境变量的
+	 * 两个对象：MapPropertySource和SystemEnvironmentPropertySource。
+	 *
 	 * Customize the set of property sources with those contributed by superclasses as
 	 * well as those appropriate for standard servlet-based environments:
 	 * <ul>

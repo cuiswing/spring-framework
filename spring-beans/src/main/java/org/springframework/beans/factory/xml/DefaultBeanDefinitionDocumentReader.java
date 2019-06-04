@@ -58,8 +58,10 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocumentReader {
 
+
 	public static final String BEAN_ELEMENT = BeanDefinitionParserDelegate.BEAN_ELEMENT;
 
+	// 类中定义了对应xml文档中的常量值如”import”,”beans”等,这些常量对应spring配置文件元素名称.如<import>元素
 	public static final String NESTED_BEANS_ELEMENT = "beans";
 
 	public static final String ALIAS_ELEMENT = "alias";
@@ -89,9 +91,21 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * (or DTD, historically).
 	 * <p>Opens a DOM Document; then initializes the default settings
 	 * specified at the {@code <beans/>} level; then parses the contained bean definitions.
+	 *
+	 * 该接口只有registerBeanDefinitions(Document doc, XmlReaderContext readerContext)一个方法,
+	 * 用来读取Document文档并使用XmlReaderContext来处理Document,
+	 * 注意XmlReaderContext绑定了一个XmlBeanDefinitionReader对象,该对象又关联BeanDefinitionRegistry,
+	 * 所以才能将处理后的BeanDefinition和BeanDefinitionRegistry关联起来.
 	 */
 	@Override
 	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
+		// 定义了XmlReaderContext和BeanDefinitionParserDelegate两个类型变量,XmlReaderContext前面提到过为xml读取上下文
+		// 从名称上可以看出此类是一个委托类,主要用来处理bean元素,DefaultBeanDefinitionDocumentReader在处理xml元素节点时,
+		// 如果节点元素对应的namespace不为”http://www.springframework.org/schema/beans“命名空间时,
+		// 此时将元素委托给BeanDefinitonParserDelegate处理,
+		// 如<context:component-scan>元素对应的namespace为”http://www.springframework.org/schema/context“,
+		// 当处理到该元素的时候则委托给BeanDefinitonParserDelegate类处理.该部分功能在parseBeanDefinitions方法实现.
+
 		this.readerContext = readerContext;
 		doRegisterBeanDefinitions(doc.getDocumentElement());
 	}
@@ -125,6 +139,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// the new (child) delegate with a reference to the parent for fallback purposes,
 		// then ultimately reset this.delegate back to its original (parent) reference.
 		// this behavior emulates a stack of delegates without actually necessitating one.
+		logger.debug("这里是处理xml文件，并注册bean definitions到registry里的代码");
 		BeanDefinitionParserDelegate parent = this.delegate;
 		this.delegate = createDelegate(getReaderContext(), root, parent);
 
@@ -186,6 +201,10 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		}
 	}
 
+	// parseDefaultElement方法主要用来处理xml节点并且对应namespace为”http://www.springframework.org/schema/beans“的元素,
+	// 如<import>,在实际应用中会在一个spring配置文件中import多个配置文件,
+	// 此时在解析<import>元素时,会调用parseDefaultElement根据元素名称调用对应方法,
+	// 如<import>会调用importBeanDefinitionResource方法进行处理
 	private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
 		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
 			importBeanDefinitionResource(ele);

@@ -42,6 +42,7 @@ import java.util.Set;
 import org.springframework.lang.Nullable;
 
 /**
+ * 类级别相关的工具类，主要是提供给Spring框架内部使用
  * Miscellaneous {@code java.lang.Class} utility methods.
  * Mainly for internal use within the framework.
  *
@@ -162,6 +163,7 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 获取默认的类加载器
 	 * Return the default ClassLoader to use: typically the thread context
 	 * ClassLoader, if available; the ClassLoader that loaded the ClassUtils
 	 * class will be used as fallback.
@@ -179,6 +181,11 @@ public abstract class ClassUtils {
 	public static ClassLoader getDefaultClassLoader() {
 		ClassLoader cl = null;
 		try {
+			//获取当前线程的context class loader
+			// 通过Thread.getContextClassLoader()方法获取到的是线程绑定的类加载器，
+			// 这个classloader是父线程在创建子线程的时候，通过Thread.setContextClassLoader()方法设置进去，用于该线程加载类和资源的，
+			// 如果没有调用这个方法，那么直接使用父线程的classLoader；
+			// 如果这个方法返回null，代表该线程直接使用的系统class loader或者bootstrap class loader；
 			cl = Thread.currentThread().getContextClassLoader();
 		}
 		catch (Throwable ex) {
@@ -186,10 +193,12 @@ public abstract class ClassUtils {
 		}
 		if (cl == null) {
 			// No thread context class loader -> use class loader of this class.
+			// 如果没有获取到线程上下文类加载器,则使用当前类的类加载器
 			cl = ClassUtils.class.getClassLoader();
 			if (cl == null) {
 				// getClassLoader() returning null indicates the bootstrap ClassLoader
 				try {
+					//如果当前类的类加载器也没有获取到,则使用bootstrap ClassLoader
 					cl = ClassLoader.getSystemClassLoader();
 				}
 				catch (Throwable ex) {
@@ -201,6 +210,8 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 使用传入的classloader替换线程的classloader；
+	 * 使用场景，比如一个线程的classloader和spring的classloader不一致的时候，就可以使用这个方法替换；
 	 * Override the thread context ClassLoader with the environment's bean ClassLoader
 	 * if necessary, i.e. if the bean ClassLoader is not equivalent to the thread
 	 * context ClassLoader already.
@@ -221,6 +232,13 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 是Class.forName的一个增强版本；通过指定的classloader加载对应的类；除了能正常加载普通的类型，还能加载简单类型，数组，或者内部类
+	 *
+	 * 替换Class.forName()它也会返回基元的类实例（例如“int”）和数组类名（例如“String []”）。
+	 *   此外，它还能够以Java源代码样式解析内部类名（例如“java.lang.Thread.State”而不
+	 *   是“java.lang.Thread $ State”）。
+	 *   如果找不到或者无法加载类则抛出异常
+	 *
 	 * Replacement for {@code Class.forName()} that also returns Class instances
 	 * for primitives (e.g. "int") and array class names (e.g. "String[]").
 	 * Furthermore, it is also capable of resolving inner class names in Java source
@@ -238,7 +256,9 @@ public abstract class ClassUtils {
 
 		Assert.notNull(name, "Name must not be null");
 
+		//根据JVM的基本类命名规则，将给定的类名解析为基本类（如果适用）。
 		Class<?> clazz = resolvePrimitiveClassName(name);
+		//从commonClassCache缓存Map中获取,如果存在则返回
 		if (clazz == null) {
 			clazz = commonClassCache.get(name);
 		}
@@ -327,6 +347,7 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 判断当前class loader中是否存在对应的类型了
 	 * Determine whether the {@link Class} identified by the supplied name is present
 	 * and can be loaded. Will return {@code false} if either the class or
 	 * one of its dependencies is not present or cannot be loaded.
@@ -379,6 +400,7 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 判断类是否是可以缓存的，原理：就是判断该类型是否在指定classloader或者其parent classloader中
 	 * Check whether the given class is cache-safe in the given context,
 	 * i.e. whether it is loaded by the given ClassLoader or a parent of it.
 	 * @param clazz the class to analyze
@@ -439,6 +461,7 @@ public abstract class ClassUtils {
 	}
 
 	/**
+	 * 基础类型
 	 * Resolve the given class name as primitive class, if appropriate,
 	 * according to the JVM's naming rules for primitive classes.
 	 * <p>Also supports the JVM's internal class names for primitive arrays.

@@ -161,6 +161,8 @@ public abstract class AbstractApplicationEventMulticaster
 	}
 
 	/**
+	 * 返回与给定事件类型匹配的ApplicationListeners集合。不匹配的Listeners会尽早被排除在外。
+	 *
 	 * Return a Collection of ApplicationListeners matching the given
 	 * event type. Non-matching listeners get excluded early.
 	 * @param event the event to be propagated. Allows for excluding
@@ -172,28 +174,35 @@ public abstract class AbstractApplicationEventMulticaster
 	protected Collection<ApplicationListener<?>> getApplicationListeners(
 			ApplicationEvent event, ResolvableType eventType) {
 
+		//获取事件源,并封装至ListenerCacheKey对象
 		Object source = event.getSource();
 		Class<?> sourceType = (source != null ? source.getClass() : null);
 		ListenerCacheKey cacheKey = new ListenerCacheKey(eventType, sourceType);
 
 		// Quick check for existing entry on ConcurrentHashMap...
+		//尝试从缓存中获取事件
 		ListenerRetriever retriever = this.retrieverCache.get(cacheKey);
 		if (retriever != null) {
 			return retriever.getApplicationListeners();
 		}
 
+		//检查给定类在给定上下文中是否是缓存安全的，即它是由给定的ClassLoader还是由其父类加载。
 		if (this.beanClassLoader == null ||
 				(ClassUtils.isCacheSafe(event.getClass(), this.beanClassLoader) &&
 						(sourceType == null || ClassUtils.isCacheSafe(sourceType, this.beanClassLoader)))) {
 			// Fully synchronized building and caching of a ListenerRetriever
 			synchronized (this.retrievalMutex) {
+				////抢到锁之后再做一次判断，因为有可能在前面BLOCK的时候，另一个抢到锁的线程已经设置好了缓存
 				retriever = this.retrieverCache.get(cacheKey);
 				if (retriever != null) {
 					return retriever.getApplicationListeners();
 				}
+				//前面都没有能从缓存中获取到,则创建ListenerRetriever对象,
 				retriever = new ListenerRetriever(true);
+				//根据事件源检索对应的监听器
 				Collection<ApplicationListener<?>> listeners =
 						retrieveApplicationListeners(eventType, sourceType, retriever);
+				//加入到retrieverCache缓存中
 				this.retrieverCache.put(cacheKey, retriever);
 				return listeners;
 			}
@@ -211,6 +220,10 @@ public abstract class AbstractApplicationEventMulticaster
 	 * @param retriever the ListenerRetriever, if supposed to populate one (for caching purposes)
 	 * @return the pre-filtered list of application listeners for the given event and source type
 	 */
+	//根据事件源检索对应的监听器,以下例分析
+	//eventType-->org.springframework.boot.context.event.ApplicationStartingEvent
+	//sourceType-->class org.springframework.boot.SpringApplication
+	//retriever-->Helper类，它封装一组特定的目标监听器，允许有效地检索预先过滤的监听器。
 	private Collection<ApplicationListener<?>> retrieveApplicationListeners(
 			ResolvableType eventType, @Nullable Class<?> sourceType, @Nullable ListenerRetriever retriever) {
 
@@ -221,7 +234,9 @@ public abstract class AbstractApplicationEventMulticaster
 			listeners = new LinkedHashSet<>(this.defaultRetriever.applicationListeners);
 			listenerBeans = new LinkedHashSet<>(this.defaultRetriever.applicationListenerBeans);
 		}
+		//循环上下文初始化加载的所有监听器
 		for (ApplicationListener<?> listener : listeners) {
+			//判断监听器是否支持给定的事件
 			if (supportsEvent(listener, eventType, sourceType)) {
 				if (retriever != null) {
 					retriever.applicationListeners.add(listener);
@@ -256,6 +271,7 @@ public abstract class AbstractApplicationEventMulticaster
 				}
 			}
 		}
+		//排序并返回
 		AnnotationAwareOrderComparator.sort(allListeners);
 		if (retriever != null && retriever.applicationListenerBeans.isEmpty()) {
 			retriever.applicationListeners.clear();
@@ -285,6 +301,8 @@ public abstract class AbstractApplicationEventMulticaster
 	}
 
 	/**
+	 * 判断监听器是否支持给定的事件
+	 *
 	 * Determine whether the given listener supports the given event.
 	 * <p>The default implementation detects the {@link SmartApplicationListener}
 	 * and {@link GenericApplicationListener} interfaces. In case of a standard
@@ -299,6 +317,9 @@ public abstract class AbstractApplicationEventMulticaster
 	protected boolean supportsEvent(
 			ApplicationListener<?> listener, ResolvableType eventType, @Nullable Class<?> sourceType) {
 
+		//如果监听器是GenericApplicationListener实例,则直接返回
+		//否则创建GenericApplicationListenerAdapter实例
+		//GenericApplicationListenerAdapter-->事件适配器
 		GenericApplicationListener smartListener = (listener instanceof GenericApplicationListener ?
 				(GenericApplicationListener) listener : new GenericApplicationListenerAdapter(listener));
 		return (smartListener.supportsEventType(eventType) && smartListener.supportsSourceType(sourceType));

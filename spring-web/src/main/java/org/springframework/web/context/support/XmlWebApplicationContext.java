@@ -73,6 +73,13 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 
 	/**
 	 * Loads the bean definitions via an XmlBeanDefinitionReader.
+	 * 通过读取xml配置文件来获取bean definitions
+	 * loadBeanDefinitions方法首先创建一个XmlBeanDefinitionReader对象,
+	 * 然后将当前applicationContext中创建的DefaultListableBeanFactory以及Environment等对象传递给XmlBeanDefinitionReader对象,
+	 * 最后调用XmlBeanDefinitionReader.loadBeanDefinitions(configLocation)来完成实际BeanDefinition加载工作,
+	 * 那么在XmlBeanDefinitionReader.loadBeanDefinitions(configLocation)内部又是怎么一个流程?
+	 * 需要进入XmlBeanDefinitionReader类中的loadBeanDefinitions(configLocation)来查看源码实现
+	 *
 	 * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 	 * @see #initBeanDefinitionReader
 	 * @see #loadBeanDefinitions
@@ -80,6 +87,13 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
+		// XmlBeanDefinitionReader实现了BeanDefinitionReader接口,该接口从名称上可以看出主要用来读取BeanDefinition对象
+		// 接口提供了以下方法:
+		// BeanDefinitionRegistry getRegistry();获取BeanDefinition注册容器,以便将加载进来的beanDefinition存放到该容器中.查看源代码可以知道在XmlBeanDefinitionReader中,该方法返回的其实就是在XmlWebApplicationContext中创建的DefaultListableBeanFactory对象.
+		// ResourceLoader getResourceLoader();返回解析资源加载器对象,该方法实现是在BeanDefinitionReader抽象实现类AbstractBeanDefinitionReader中来实现,查看源代码可以看出其实是通过this.resourceLoader = new PathMatchingResourcePatternResolver();返回一个PathMatchingResourcePatternResolver对象.
+		// loadBeanDefinition提供了几个方法重载,在这几个方法中除了loadBeanDefinitions(Resource resource)是在XmlBeanDefinitionReader中实现外,其它3个是在AbstractBeanDefinitionReader中实现,其实这3个最终调用的是loadBeanDefinitions(Resource resource),只不过loadBeanDefinitions(String location)首先将location解析成对应Resource对象,而用来解析的功能即使用getResourceLoader()返回的ResourceLoader对象来完成(在AbstractBeanDefinitionReader中即为PathMatchingResourcePatternResolver).
+
+		logger.debug("你的项目启用的是XmlWebApplicationContext容器，读取配置文件的是XmlBeanDefinitionReader。");
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
@@ -91,6 +105,7 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 		// Allow a subclass to provide custom initialization of the reader,
 		// then proceed with actually loading the bean definitions.
 		initBeanDefinitionReader(beanDefinitionReader);
+		// loadBeanDefinitions(Resource resource)方法是在XmlBeanDefinitionReader类中来实现的
 		loadBeanDefinitions(beanDefinitionReader);
 	}
 

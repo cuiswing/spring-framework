@@ -23,6 +23,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
+
 /**
  * Standalone XML application context, taking the context definition files
  * from the class path, interpreting plain paths as class path resource names
@@ -138,9 +140,17 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 			String[] configLocations, boolean refresh, @Nullable ApplicationContext parent)
 			throws BeansException {
 
+		// 调用父类构造器
 		super(parent);
+		String clazz = Thread.currentThread().getStackTrace()[1].getClassName();
+		String method = Thread.currentThread().getStackTrace()[1].getMethodName();
+		logger.debug("入口：项目从这里开始启动，上面的parent是null,下面开始设置配置文件:" + Arrays.deepToString(configLocations)
+				+ " class:" + clazz + ",method:" + method);
+		// 设定配置文件路径
 		setConfigLocations(configLocations);
+		// 设置完后进入容器的实例化阶段
 		if (refresh) {
+			// refresh()方法是ApplicationContext最关键最核心的方法
 			refresh();
 		}
 	}

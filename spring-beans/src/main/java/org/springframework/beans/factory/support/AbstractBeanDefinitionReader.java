@@ -228,6 +228,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 				if (logger.isTraceEnabled()) {
 					logger.trace("Loaded " + count + " bean definitions from location pattern [" + location + "]");
 				}
+				logger.debug("加载了 " + count + " bean definitions from location pattern [" + location + "]");
 				return count;
 			}
 			catch (IOException ex) {
@@ -245,6 +246,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 			if (logger.isTraceEnabled()) {
 				logger.trace("Loaded " + count + " bean definitions from location [" + location + "]");
 			}
+			logger.debug("加载了 " + count + " bean definitions from location [" + location + "]");
 			return count;
 		}
 	}

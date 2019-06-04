@@ -66,6 +66,8 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 		return bean;
 	}
 
+	// 当bean是ApplicationListener且是单例模式的bean时，则将监听器加入到applicationContext容器中，
+	// 否则打印日志并将bean从当前类缓存集合中移除（不是从容器中移除）
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		if (bean instanceof ApplicationListener) {

@@ -1,3 +1,9 @@
+#重编译
+1. git clone、
+2. 导入idea（需要启用gradle插件）
+3. 修改gradle.properties文件中的版本号
+4. 发布到本地仓库（./gradlew install -x javadoc）
+
 # <img src="src/docs/asciidoc/images/spring-framework.png" width="80" height="80"> Spring Framework
 
 This is the home of the Spring Framework: the foundation for all [Spring projects](https://spring.io/projects). Collectively the Spring Framework and the family of Spring projects is often referred to simply as "Spring". 
