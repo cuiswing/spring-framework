@@ -155,7 +155,7 @@ final class PostProcessorRegistrationDelegate {
 			// 调用所有BeanDefinitionRegistryPostProcessor(包括手动注册和通过配置文件注册)
 			// 和BeanFactoryPostProcessor(只有手动注册)的回调函数-->postProcessBeanFactory
 
-			// 前面的currentRegistryProcessors已经处理过了，为什么还要再重复处理一遍
+			// 前面的currentRegistryProcessors已经处理过了，为什么还要再重复处理一遍 todo
 			invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
 			invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
 		}
