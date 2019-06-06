@@ -59,6 +59,8 @@ import org.springframework.core.type.filter.TypeFilter;
 public @interface ComponentScan {
 
 	/**
+	 * 对应的包扫描路径 可以是单个路径，也可以是扫描的路径数组
+	 *
 	 * Alias for {@link #basePackages}.
 	 * <p>Allows for more concise annotation declarations if no other attributes
 	 * are needed &mdash; for example, {@code @ComponentScan("org.my.pkg")}
@@ -68,6 +70,8 @@ public @interface ComponentScan {
 	String[] value() default {};
 
 	/**
+	 * 和value一样是对应的包扫描路径 可以是单个路径，也可以是扫描的路径数组
+	 *
 	 * Base packages to scan for annotated components.
 	 * <p>{@link #value} is an alias for (and mutually exclusive with) this
 	 * attribute.
@@ -78,6 +82,8 @@ public @interface ComponentScan {
 	String[] basePackages() default {};
 
 	/**
+	 * 指定具体的扫描的类
+	 *
 	 * Type-safe alternative to {@link #basePackages} for specifying the packages
 	 * to scan for annotated components. The package of each class specified will be scanned.
 	 * <p>Consider creating a special no-op marker class or interface in each package
@@ -86,6 +92,8 @@ public @interface ComponentScan {
 	Class<?>[] basePackageClasses() default {};
 
 	/**
+	 * 对应的bean名称的生成器 默认的是BeanNameGenerator
+	 *
 	 * The {@link BeanNameGenerator} class to be used for naming detected components
 	 * within the Spring container.
 	 * <p>The default value of the {@link BeanNameGenerator} interface itself indicates
@@ -98,11 +106,15 @@ public @interface ComponentScan {
 	Class<? extends BeanNameGenerator> nameGenerator() default BeanNameGenerator.class;
 
 	/**
+	 * 处理检测到的bean的scope范围
+	 *
 	 * The {@link ScopeMetadataResolver} to be used for resolving the scope of detected components.
 	 */
 	Class<? extends ScopeMetadataResolver> scopeResolver() default AnnotationScopeMetadataResolver.class;
 
 	/**
+	 * 是否为检测到的组件生成代理
+	 *
 	 * Indicates whether proxies should be generated for detected components, which may be
 	 * necessary when using scopes in a proxy-style fashion.
 	 * <p>The default is defer to the default behavior of the component scanner used to
@@ -113,6 +125,8 @@ public @interface ComponentScan {
 	ScopedProxyMode scopedProxy() default ScopedProxyMode.DEFAULT;
 
 	/**
+	 * 控制符合组件检测条件的类文件   默认是包扫描下的: "&lowast;&lowast;/&lowast;.class"
+	 *
 	 * Controls the class files eligible for component detection.
 	 * <p>Consider use of {@link #includeFilters} and {@link #excludeFilters}
 	 * for a more flexible approach.
@@ -120,12 +134,21 @@ public @interface ComponentScan {
 	String resourcePattern() default ClassPathScanningCandidateComponentProvider.DEFAULT_RESOURCE_PATTERN;
 
 	/**
+	 * 是否对带有@Component @Repository @Service @Controller注解的类开启检测,默认是开启的
+	 *
 	 * Indicates whether automatic detection of classes annotated with {@code @Component}
 	 * {@code @Repository}, {@code @Service}, or {@code @Controller} should be enabled.
 	 */
 	boolean useDefaultFilters() default true;
 
 	/**
+	 * 指定某些定义Filter满足条件的组件 FilterType有5种类型如：
+	 *                                         ANNOTATION, 注解类型 默认
+	 *                                         ASSIGNABLE_TYPE,指定固定类
+	 *                                         ASPECTJ， ASPECTJ类型
+	 *                                         REGEX,正则表达式
+	 *                                         CUSTOM,自定义类型
+	 *
 	 * Specifies which types are eligible for component scanning.
 	 * <p>Further narrows the set of candidate components from everything in {@link #basePackages}
 	 * to everything in the base packages that matches the given filter or filters.
@@ -138,12 +161,16 @@ public @interface ComponentScan {
 	Filter[] includeFilters() default {};
 
 	/**
+	 * 排除某些过来器扫描到的类
+	 *
 	 * Specifies which types are not eligible for component scanning.
 	 * @see #resourcePattern
 	 */
 	Filter[] excludeFilters() default {};
 
 	/**
+	 * 扫描到的类是都开启懒加载 ，默认是不开启的
+	 *
 	 * Specify whether scanned beans should be registered for lazy initialization.
 	 * <p>Default is {@code false}; switch this to {@code true} when desired.
 	 * @since 4.1

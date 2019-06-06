@@ -159,6 +159,8 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	@Nullable
 	public Object proceed() throws Throwable {
 		//	We start with an index of -1 and increment early.
+		// 如果没有拦截器，则第一次就满足条件，就直接调用invokeJoinpoint后返回了
+		// 或者等到拦截器链中的最后一个拦截器执行完后，即可执行目标方法
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
 			return invokeJoinpoint();
 		}

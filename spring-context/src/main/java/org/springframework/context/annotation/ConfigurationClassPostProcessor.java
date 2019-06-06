@@ -214,6 +214,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 
 	/**
+	 * 这里就是处理注解然后将bean注册到容器的地方
+	 * <p>
 	 * Derive further bean definitions from the configuration classes in the registry.
 	 */
 	@Override
@@ -304,6 +306,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			this.environment = new StandardEnvironment();
 		}
 
+		// 这是扫描所有@Configuration注解的解析器
+		// 用于将被注解的类转换成ConfigurationClass供ConfigurationClassBeanDefinitionReader注册
 		// Parse each @Configuration class
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
@@ -311,8 +315,12 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
+		// 配置类ConfigurationClass代表了一个用户定义的@Configuration注解的类，其中包含了其自身和祖先标有@Bean的方法。
+		// 解析一个ConfigurationClass后可能产生新的ConfigurationClass definition需要循环处理
 		do {
+			// 解析配置，解析ConfigurationClass的过程
 			parser.parse(candidates);
+			// @Configuration类不允许是final的，@Bean方法必须是可被重写的(可以是私有方法)静态方法不做处理
 			parser.validate();
 
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
@@ -324,6 +332,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			// 向容器中注册bean definition
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 
@@ -350,6 +359,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		while (!candidates.isEmpty());
 
 		// Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+		//ImportStack记录了哪些配置类通过@Import(看ImportSelector,ImportBeanDefinitionRegistrar接口)导入了哪些类
+		//后面通过ImportAwareBeanPostProcessor的功能实现了ImportAware接口的配置类可以得到导入类的注解属性
 		if (sbr != null && !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
 			sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
 		}

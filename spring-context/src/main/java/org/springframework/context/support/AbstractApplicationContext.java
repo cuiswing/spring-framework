@@ -518,6 +518,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
+		logger.debug("refresh方法开始运行");
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
 			// 准备刷新上下文环境
@@ -534,7 +535,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
 				// 子类覆盖方法额外处理(空方法)
+				logger.debug("4、postProcessBeanFactory()方法执行，子类通过重写这个方法，在beanFactory创建完成并准备好之后做进一步的设置工作");
 				postProcessBeanFactory(beanFactory);
+
+				logger.debug("以上为beanFactory的创建以及预准备工作完成，下面👇开始进入各种流程：");
 
 				// Invoke factory processors registered as beans in the context.
 				// 调用各种BeanFactoryPostProcessors处理器
@@ -554,6 +558,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Initialize other special beans in specific context subclasses.
 				// 留给子类初始化其他Bean
+				logger.debug("9、onRefresh()执行，这个也是留给子类去实现的，子容器通过重写这个方法，可以插入一些自定义逻辑");
 				onRefresh();
 
 				// Check for listener beans and register them.
@@ -601,6 +606,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * active flag as well as performing any initialization of property sources.
 	 */
 	protected void prepareRefresh() {
+		logger.debug("1、prepareRefresh()开始执行，准备刷新上下文环境，设置它的启动日期和活动标志，以及执行任何属性源的初始化。");
 		// Switch to active.
 		this.startupDate = System.currentTimeMillis();
 		this.closed.set(false);
@@ -656,6 +662,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		logger.debug("2、obtainFreshBeanFactory()执行，刷新refreshBeanFactory，并获取BeanFactory后返回");
 		// 刷新BeanFactory
 		refreshBeanFactory();
 		// 获取BeanFactory并返回
@@ -670,6 +677,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		// Tell the internal bean factory to use the context's class loader etc.
 		// 设置 beanFactory 的 classLoader
+		logger.debug("3、prepareBeanFactory()执行，一些预处理工作：" +
+				"\n设置类加载器、表达式语言处理器，添加了几个BeanPostProcessor，" +
+				"\n设置了几个忽略装配的接口：EnvironmentAware、EmbeddedValueResolverAware、ResourceLoaderAware……(这些接口的实现类不能自动装配)" +
+				"\n注册几个可以解析的自动装配：BeanFactory、ResourceLoader、ApplicationEventPublisher、ApplicationContext" +
+				"（这些bean不需要我们手动注册，但是可以在代码中直接引用，容器会给我们的代码自动装配过来）" +
+				"\n注册了三个默认的系统环境bean：environment、systemProperties、systemEnvironment");
 		beanFactory.setBeanClassLoader(getClassLoader());
 		// 设置beanFactory的表达式语言处理器,Spring3开始增加了对语言表达式的支持,默认可以使用#{bean.xxx}的形式来调用相关属性值
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
@@ -733,11 +746,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * 调用各种BeanFactory处理器
 	 * 调用工作委托给了PostProcessorRegistrationDelegate类来执行，
 	 * 并且通过getBeanFactoryPostProcessors方法获取了手动注册的BeanFactoryPostProcessor。
+	 * <p>
 	 * Instantiate and invoke all registered BeanFactoryPostProcessor beans,
 	 * respecting explicit order if given.
 	 * <p>Must be called before singleton instantiation.
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		logger.debug("5、invokeBeanFactoryPostProcessors()执行,BeanFactory的后置处理，即调用了所有的BeanFactoryPostProcessor接口" +
+				"（包括其子接口：BeanDefinitionRegistryPostProcessor）,实际是委托给PostProcessorRegistrationDelegate去执行的。");
 		//getBeanFactoryPostProcessors->获取手动注册的BeanFactoryPostProcessor
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
@@ -755,6 +771,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Must be called before any instantiation of application beans.
 	 */
 	protected void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		logger.debug("6、registerBeanPostProcessors()执行，注册所有的BeanPostProcessor(用于拦截bean的创建过程)," +
+				"也是委托给PostProcessorRegistrationDelegate去执行的。调用的方法不一样而已：registerBeanPostProcessors");
 		PostProcessorRegistrationDelegate.registerBeanPostProcessors(beanFactory, this);
 	}
 
@@ -763,6 +781,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Use parent's if none defined in this context.
 	 */
 	protected void initMessageSource() {
+		logger.debug("7、initMessageSource()执行，初始化MessageSource，做一些国际化、消息绑定、消息解析的工作");
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		if (beanFactory.containsLocalBean(MESSAGE_SOURCE_BEAN_NAME)) {
 			this.messageSource = beanFactory.getBean(MESSAGE_SOURCE_BEAN_NAME, MessageSource.class);
@@ -798,9 +817,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.context.event.SimpleApplicationEventMulticaster
 	 */
 	protected void initApplicationEventMulticaster() {
+		logger.debug("8、initApplicationEventMulticaster()执行，初始化事件派发器，");
 		// 默认使用内置的事件广播器,如果有的话.
 		// 我们可以在配置文件中配置Spring事件广播器或者自定义事件广播器
-		// 例如: <bean id="applicationEventMulticaster" class="org.springframework.context.event.SimpleApplicationEventMulticaster"></bean>
+		// 例如xml方式: <bean id="applicationEventMulticaster" class="org.springframework.context.event.SimpleApplicationEventMulticaster"></bean>
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		if (beanFactory.containsLocalBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME)) {
 			this.applicationEventMulticaster =
@@ -867,6 +887,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Doesn't affect other listeners, which can be added without being beans.
 	 */
 	protected void registerListeners() {
+		logger.debug("10、registerListeners()执行，将容器中所有的ApplicationListener注册到事件派发器中。");
 		// Register statically specified listeners first.
 		// 首先,注册指定的静态事件监听器,在spring boot中有应用：就是spring.factories文件中定义的，通过反射注册到容器中的listener
 		for (ApplicationListener<?> listener : getApplicationListeners()) {
@@ -898,6 +919,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * initializing all remaining singleton beans.
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+		logger.debug("11、finishBeanFactoryInitialization()执行，初始化所有剩下的单实例bean。\n" +
+				"主要流程：11.1、Object bean = resolveBeforeInstantiation(beanName, mbdToUse);先给机会返回代理对象，原理是由InstantiationAwareBeanPostProcessor接口的实现类返回的（但是从没见过在这里就返回的）\n" +
+				"11.2、instanceWrapper = createBeanInstance(beanName, mbd, args); 实例化bean，这时候各个属性值还都是null；\n" +
+				"11.3、populateBean(beanName, mbd, instanceWrapper); 这个就是注入各个bean属性了；\n" +
+				"11.4、exposedObject = initializeBean(beanName, exposedObject, mbd); 初始化bean，做一些后置处理工作，内容还挺多的：\n" +
+				"11.4.1、invokeAwareMethods(beanName, bean); 先调用各种Aware接口的回调方法；\n" +
+				"11.4.2、wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName); 然后调用各种BeanPostProcessor的回调方法；\n" +
+				"11.4.3、invokeInitMethods(beanName, wrappedBean, mbd); 接着调用初始化方法：顺序是： InitializingBean -> 自定义的init(另外两种自定义方法都是通过BeanPostProcessor实现的，@@PostConstruct和自定义的BeanPostProcessor，顺序更优先已经执行了)\n" +
+				"11.4.3、wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName); 后置处理，遍历调用BeanPostProcessor的postProcessAfterInitialization方法\n" +
+				"完成后将bean缓存到singletonObjects中，就是个Map<String, Object>，以后再取就直接返回了");
 		// Initialize conversion service for this context.
 		// 判断有无ConversionService(bean属性类型转换服务接口),并初始化
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
@@ -943,6 +974,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * {@link org.springframework.context.event.ContextRefreshedEvent}.
 	 */
 	protected void finishRefresh() {
+		logger.debug("12、finishRefresh()执行：清空资源缓存，初始化生命周期处理器，执行刚才这个生命周期处理器的onRefresh方法，" +
+				"发布ContextRefreshedEvent事件，还有一个不知道是干啥的" );
 		// Clear context-level resource caches (such as ASM metadata from scanning).
 		// 清空资源缓存
 		clearResourceCaches();

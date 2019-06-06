@@ -79,7 +79,7 @@ final class PostProcessorRegistrationDelegate {
 					registryProcessor.postProcessBeanDefinitionRegistry(registry);
 					registryProcessors.add(registryProcessor);
 				}
-				// 否则则将其当做普通的BeanFactoryPostProcessor处理,直接加入 regularPostProcessors 集合,以备后续处理
+				// 否则则将其当做普通的BeanFactoryPostProcessor处理,直接加入 regularPostProcessors 集合,在后面会处理
 				else {
 					regularPostProcessors.add(postProcessor);
 				}
@@ -130,6 +130,8 @@ final class PostProcessorRegistrationDelegate {
 
 			// Finally, invoke all other BeanDefinitionRegistryPostProcessors until no further ones appear.
 			// 最后,调用其他的BeanDefinitionRegistryPostProcessors
+			// 为什么有个循环？
+			// 是怕处理BeanDefinitionRegistryPostProcessor时，这些postProcessBeanDefinitionRegistry又向容器中注入BeanDefinitionRegistryPostProcessor吗？
 			boolean reiterate = true;
 			while (reiterate) {
 				reiterate = false;
@@ -155,7 +157,9 @@ final class PostProcessorRegistrationDelegate {
 			// 调用所有BeanDefinitionRegistryPostProcessor(包括手动注册和通过配置文件注册)
 			// 和BeanFactoryPostProcessor(只有手动注册)的回调函数-->postProcessBeanFactory
 
-			// 前面的currentRegistryProcessors已经处理过了，为什么还要再重复处理一遍 todo
+			// 前面的currentRegistryProcessors已经处理过了，为什么还要再重复处理一遍？
+			// 仔细看：前面调用的是BeanDefinitionRegistryPostProcessor的postProcessBeanDefinitionRegistry 方法，
+			// 而这里调用的是BeanFactoryPostProcessor的postProcessBeanFactory方法
 			invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
 			invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
 		}
@@ -245,8 +249,9 @@ final class PostProcessorRegistrationDelegate {
 
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
-		// 对实现了PriorityOrdered接口,Ordered接口,内部BeanPostProcessor和其他的BeanPostProcessor分类处理
-		// todo:为什么容器中的泛型类型不一样，一个用现有的BeanPostProcessor，另两个用name存储？
+		// 对实现了PriorityOrdered接口,Ordered接口,内部BeanPostProcessor和其他的BeanPostProcessor分类处理，定义了四个集合
+		// todo:为什么这几个集合中的泛型类型不一样，2个用现有的BeanPostProcessor，另两个用name存储？
+		//  是为了先实例化实现了PriorityOrdered接口的BeanPostProcessor实例，因为在beanFactory.getBean调用时即实例化了bean
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
 		List<String> orderedPostProcessorNames = new ArrayList<>();
@@ -274,6 +279,8 @@ final class PostProcessorRegistrationDelegate {
 
 		// Next, register the BeanPostProcessors that implement Ordered.
 		// 其次,注册实现了Ordered(排序接口的)BeanPostProcessor
+		// todo: 这段重复的代码为什么不提取出来，甚者和上面的写到一起也好啊，风格统一。
+		//  为什么非得先用List<String> orderedPostProcessorNames存一遍名称，然后再转成 List<BeanPostProcessor> 呢？
 		List<BeanPostProcessor> orderedPostProcessors = new ArrayList<>();
 		for (String ppName : orderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
@@ -303,7 +310,7 @@ final class PostProcessorRegistrationDelegate {
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,
 		// moving it to the end of the processor chain (for picking up proxies etc).
-		// 注册一个ApplicationListenerDetector用来侦测ApplicationListener类型的bean
+		// 注册一个ApplicationListenerDetector用来检测ApplicationListener类型的bean
 		// 并将它们加入到容器的applicationEventMulticaster或applicationListeners集合中
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}

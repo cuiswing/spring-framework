@@ -681,6 +681,11 @@ public abstract class AnnotationUtils {
 	}
 
 	/**
+	 * <p>这个方法厉害了：查找指定class上的指定注解类型annotationType的注解对象，
+	 * 如果class上没有直接注解的话，还会遍历它的接口、注解、父类上的注解，直到找到第一个为止，找不到就返回null，
+	 * 这个就是springboot上的组合注解需要用到的地方。
+	 *
+	 * <p>
 	 * Find a single {@link Annotation} of {@code annotationType} on the
 	 * supplied {@link Class}, traversing its interfaces, annotations, and
 	 * superclasses if the annotation is not <em>directly present</em> on
@@ -708,11 +713,12 @@ public abstract class AnnotationUtils {
 	}
 
 	/**
+	 *
 	 * Perform the actual work for {@link #findAnnotation(AnnotatedElement, Class)},
 	 * honoring the {@code synthesize} flag.
 	 * @param clazz the class to look for annotations on
 	 * @param annotationType the type of annotation to look for
-	 * @param synthesize {@code true} if the result should be
+	 * @param synthesize {@code true} if the result should be  是否合成的注解
 	 * {@linkplain #synthesizeAnnotation(Annotation) synthesized}
 	 * @return the first matching annotation, or {@code null} if not found
 	 * @since 4.2.1
@@ -727,10 +733,12 @@ public abstract class AnnotationUtils {
 			return null;
 		}
 
+		// 先从缓存里面找，找到了就直接返回，找不到再逐个查找
 		AnnotationCacheKey cacheKey = new AnnotationCacheKey(clazz, annotationType);
 		A result = (A) findAnnotationCache.get(cacheKey);
 		if (result == null) {
 			result = findAnnotation(clazz, annotationType, new HashSet<>());
+			// 如果找到了并且还是组合注解，就缓存起来，避免再次查找耗费时间
 			if (result != null && synthesize) {
 				result = synthesizeAnnotation(result, clazz);
 				findAnnotationCache.put(cacheKey, result);
@@ -745,16 +753,18 @@ public abstract class AnnotationUtils {
 	 * been <em>visited</em>.
 	 * @param clazz the class to look for annotations on
 	 * @param annotationType the type of annotation to look for
-	 * @param visited the set of annotations that have already been visited
+	 * @param visited the set of annotations that have already been visited 这个集合变量是为了防止重复查找、循环查找
 	 * @return the first matching annotation, or {@code null} if not found
 	 */
 	@Nullable
 	private static <A extends Annotation> A findAnnotation(Class<?> clazz, Class<A> annotationType, Set<Annotation> visited) {
 		try {
+			// 先直接找当前class声明的annotationType注解，如果有就直接返回了
 			A annotation = clazz.getDeclaredAnnotation(annotationType);
 			if (annotation != null) {
 				return annotation;
 			}
+			// 如果没找到就遍历所有声明的Annotation，然后逐个判断：当其不是"java.lang.annotation"包中的注解时再递归查找此注解上的指定注解类型
 			for (Annotation declaredAnn : getDeclaredAnnotations(clazz)) {
 				Class<? extends Annotation> declaredType = declaredAnn.annotationType();
 				if (!isInJavaLangAnnotationPackage(declaredType) && visited.add(declaredAnn)) {
@@ -770,6 +780,7 @@ public abstract class AnnotationUtils {
 			return null;
 		}
 
+		// 如果没找到，再查找其实现接口上的注解
 		for (Class<?> ifc : clazz.getInterfaces()) {
 			A annotation = findAnnotation(ifc, annotationType, visited);
 			if (annotation != null) {
@@ -777,6 +788,7 @@ public abstract class AnnotationUtils {
 			}
 		}
 
+		// 接口上也没有找到，再找其父类上的注解
 		Class<?> superclass = clazz.getSuperclass();
 		if (superclass == null || superclass == Object.class) {
 			return null;
